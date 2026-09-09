@@ -2277,6 +2277,104 @@ document.addEventListener("DOMContentLoaded", function() {
         alert("La aplicación encontró un problema al iniciar. Revise la consola del navegador.");
     }
 });
+/* =========================================================
+   EXPORTAR DATOS A JSON (SIN CONSOLA)
+   ========================================================= */
+
+function exportarJSON() {
+    try {
+        const datos = {
+            materiales: JSON.parse(localStorage.getItem("inventario_materiales") || "[]"),
+            haciendas: JSON.parse(localStorage.getItem("inventario_haciendas") || "[]"),
+            usuarios: JSON.parse(localStorage.getItem("inventario_usuarios") || "[]"),
+            entradas: JSON.parse(localStorage.getItem("inventario_entradas") || "[]"),
+            consumos: JSON.parse(localStorage.getItem("inventario_consumos") || "[]"),
+            ajustes: JSON.parse(localStorage.getItem("inventario_ajustes") || "[]"),
+            proyectos: JSON.parse(localStorage.getItem("inventario_proyectos") || "[]"),
+            proyectoMateriales: JSON.parse(localStorage.getItem("inventario_proyecto_materiales") || "[]"),
+            movimientosProyecto: JSON.parse(localStorage.getItem("inventario_movimientos_proyecto") || "[]")
+        };
+        
+        const blob = new Blob([JSON.stringify(datos, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `inventario_backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert(`✅ Datos exportados correctamente.\n\n📦 Materiales: ${datos.materiales.length}\n📋 Proyectos: ${datos.proyectos.length}\n📊 Entradas: ${datos.entradas.length}\n📊 Consumos: ${datos.consumos.length}`);
+    } catch (error) {
+        console.error("Error al exportar:", error);
+        alert("❌ Error al exportar los datos: " + error.message);
+    }
+}
+
+/* =========================================================
+   IMPORTAR DATOS DESDE JSON (SIN CONSOLA)
+   ========================================================= */
+
+function importarJSON(evento) {
+    const archivo = evento.target.files?.[0];
+    if (!archivo) {
+        alert("No se seleccionó ningún archivo.");
+        return;
+    }
+    
+    const lector = new FileReader();
+    lector.onload = function(e) {
+        try {
+            const datos = JSON.parse(e.target.result);
+            let importados = 0;
+            
+            if (datos.materiales) {
+                localStorage.setItem("inventario_materiales", JSON.stringify(datos.materiales));
+                importados += datos.materiales.length;
+            }
+            if (datos.haciendas) {
+                localStorage.setItem("inventario_haciendas", JSON.stringify(datos.haciendas));
+                importados += datos.haciendas.length;
+            }
+            if (datos.usuarios) {
+                localStorage.setItem("inventario_usuarios", JSON.stringify(datos.usuarios));
+                importados += datos.usuarios.length;
+            }
+            if (datos.entradas) {
+                localStorage.setItem("inventario_entradas", JSON.stringify(datos.entradas));
+                importados += datos.entradas.length;
+            }
+            if (datos.consumos) {
+                localStorage.setItem("inventario_consumos", JSON.stringify(datos.consumos));
+                importados += datos.consumos.length;
+            }
+            if (datos.ajustes) {
+                localStorage.setItem("inventario_ajustes", JSON.stringify(datos.ajustes));
+                importados += datos.ajustes.length;
+            }
+            if (datos.proyectos) {
+                localStorage.setItem("inventario_proyectos", JSON.stringify(datos.proyectos));
+                importados += datos.proyectos.length;
+            }
+            if (datos.proyectoMateriales) {
+                localStorage.setItem("inventario_proyecto_materiales", JSON.stringify(datos.proyectoMateriales));
+                importados += datos.proyectoMateriales.length;
+            }
+            if (datos.movimientosProyecto) {
+                localStorage.setItem("inventario_movimientos_proyecto", JSON.stringify(datos.movimientosProyecto));
+                importados += datos.movimientosProyecto.length;
+            }
+            
+            alert(`✅ Datos importados correctamente.\n\nTotal registros importados: ${importados}`);
+            location.reload();
+        } catch (error) {
+            alert("❌ Error al importar: " + error.message);
+        }
+    };
+    lector.readAsText(archivo);
+    evento.target.value = "";
+}
 
 /* =========================================================
    FIN DEL SCRIPT
