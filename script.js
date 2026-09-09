@@ -2431,79 +2431,187 @@ function generarReporte() {
    REPORTE: RESUMEN EJECUTIVO
    ========================================================= */
 
-function generarResumenEjecutivo() {
-    let reporte = "========================================\n";
-    reporte += "📊 RESUMEN EJECUTIVO DE INVENTARIO\n";
-    reporte += "========================================\n";
-    reporte += `Fecha: ${fechaActual()}\n\n`;
-    
-    let totalGeneralAsignado = 0;
-    let totalGeneralConsumido = 0;
-    let totalGeneralDisponible = 0;
-    
-    proyectos.forEach(p => {
-        const id = p.ID_PROYECTO || p.ID || p.id || "";
-        const titulo = p.TITULO || p.titulo || "";
-        const solped = p.SOLPED || p.solped || "";
+function generarResumenEjecutivoExcel() {
+    try {
+        const wb = XLSX.utils.book_new();
+        const datos = [];
         
-        const registros = proyectoMateriales.filter(r => {
-            const pid = r.ID_PROYECTO || r.id_proyecto || "";
-            return String(pid).trim() === String(id).trim();
-        });
+        // ENCABEZADOS
+        datos.push([
+            'PROYECTO', 
+            'SOLPED', 
+            'MATERIALES', 
+            'ASIGNADO', 
+            'CONSUMIDO', 
+            'DISPONIBLE', 
+            'DIFERENCIA (ASIG-CONSUMIDO)', 
+            'COSTO ASIGNADO', 
+            'COSTO CONSUMIDO', 
+            'BALANCE (COSTO ASIG - COSTO CONS)', 
+            'ESTADO'
+        ]);
         
+        // VARIABLES PARA TOTALES GENERALES
+        let totalMateriales = 0;
         let totalAsignado = 0;
         let totalConsumido = 0;
+        let totalDisponible = 0;
+        let totalDiferencia = 0;
         let totalCostoAsignado = 0;
         let totalCostoConsumido = 0;
+        let totalBalance = 0;
         
-        registros.forEach(r => {
-            const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
-            const material = buscarMaterial(codigo);
-            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
-            const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
-            const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
-            totalAsignado += asignado;
-            totalConsumido += consumido;
-            totalCostoAsignado += asignado * precio;
-            totalCostoConsumido += consumido * precio;
+        // RECORRER PROYECTOS
+        proyectos.forEach(p => {
+            const id = p.ID_PROYECTO || p.ID || p.id || "";
+            const titulo = p.TITULO || p.titulo || "";
+            const solped = p.SOLPED || p.solped || "";
+            
+            const registros = proyectoMateriales.filter(r => {
+                const pid = r.ID_PROYECTO || r.id_proyecto || "";
+                return String(pid).trim() === String(id).trim();
+            });
+            
+            let totalAsignadoProyecto = 0;
+            let totalConsumidoProyecto = 0;
+            let totalCostoAsignadoProyecto = 0;
+            let totalCostoConsumidoProyecto = 0;
+            
+            registros.forEach(r => {
+                const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
+                const material = buscarMaterial(codigo);
+                const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+                const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
+                const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
+                totalAsignadoProyecto += asignado;
+                totalConsumidoProyecto += consumido;
+                totalCostoAsignadoProyecto += asignado * precio;
+                totalCostoConsumidoProyecto += consumido * precio;
+            });
+            
+            const disponible = totalAsignadoProyecto - totalConsumidoProyecto;
+            const diferencia = totalAsignadoProyecto - totalConsumidoProyecto;
+            const balance = totalCostoAsignadoProyecto - totalCostoConsumidoProyecto;
+            
+            // ACUMULAR TOTALES GENERALES
+            totalMateriales += registros.length;
+            totalAsignado += totalAsignadoProyecto;
+            totalConsumido += totalConsumidoProyecto;
+            totalDisponible += disponible;
+            totalDiferencia += diferencia;
+            totalCostoAsignado += totalCostoAsignadoProyecto;
+            totalCostoConsumido += totalCostoConsumidoProyecto;
+            totalBalance += balance;
+            
+            datos.push([
+                titulo || 'Sin título',
+                solped || '',
+                registros.length,
+                totalAsignadoProyecto,
+                totalConsumidoProyecto,
+                disponible,
+                diferencia,
+                totalCostoAsignadoProyecto,
+                totalCostoConsumidoProyecto,
+                balance,
+                balance >= 0 ? '✅ OK' : '⚠️ SOBRE COSTO'
+            ]);
         });
         
-        const disponible = totalAsignado - totalConsumido;
-        const balance = totalCostoAsignado - totalCostoConsumido;
+        // =========================================================
+        // 🔥 3 GRANDES TOTALES (CON ESPACIOS EN BLANCO PARA LEGIBILIDAD)
+        // =========================================================
         
-        totalGeneralAsignado += totalAsignado;
-        totalGeneralConsumido += totalConsumido;
-        totalGeneralDisponible += disponible;
+        // 1. TOTAL CONSUMIDO
+        datos.push([
+            '📊 TOTAL CONSUMIDO',  // PROYECTO
+            '',                    // SOLPED
+            '',                    // MATERIALES
+            '',                    // ASIGNADO
+            totalConsumido,        // CONSUMIDO  ✅
+            '',                    // DISPONIBLE
+            '',                    // DIFERENCIA
+            '',                    // COSTO ASIGNADO
+            totalCostoConsumido,   // COSTO CONSUMIDO  ✅
+            '',                    // BALANCE
+            ''                     // ESTADO
+        ]);
         
-        reporte += `📋 PROYECTO: ${titulo}\n`;
-        reporte += `   SOLPED: ${solped}\n`;
-        reporte += `   Materiales: ${registros.length}\n`;
-        reporte += `   Asignado: ${formatearNumero(totalAsignado)} unidades\n`;
-        reporte += `   Consumido: ${formatearNumero(totalConsumido)} unidades\n`;
-        reporte += `   Disponible: ${formatearNumero(disponible)} unidades\n`;
-        reporte += `   💰 Costo Asignado: ${formatearMoneda(totalCostoAsignado)}\n`;
-        reporte += `   🔥 Costo Consumido: ${formatearMoneda(totalCostoConsumido)}\n`;
-        reporte += `   📊 Balance: ${formatearMoneda(balance)}\n`;
-        reporte += `   ${balance >= 0 ? "✅" : "⚠️"} Estado: ${balance >= 0 ? "Presupuesto OK" : "Sobre costo"}\n\n`;
-    });
-    
-    reporte += "========================================\n";
-    reporte += "📊 TOTALES GENERALES\n";
-    reporte += `   Total Asignado: ${formatearNumero(totalGeneralAsignado)} unidades\n`;
-    reporte += `   Total Consumido: ${formatearNumero(totalGeneralConsumido)} unidades\n`;
-    reporte += `   Total Disponible: ${formatearNumero(totalGeneralDisponible)} unidades\n`;
-    reporte += "========================================\n";
-    reporte += `📊 FIN DEL REPORTE\n`;
-    reporte += "========================================\n";
-    
-    descargarReporte(reporte, `resumen_ejecutivo_${new Date().toISOString().slice(0,10)}.txt`);
+        // 2. TOTAL ASIGNADO
+        datos.push([
+            '📊 TOTAL ASIGNADO',   // PROYECTO
+            '',                    // SOLPED
+            '',                    // MATERIALES
+            totalAsignado,         // ASIGNADO  ✅
+            '',                    // CONSUMIDO
+            '',                    // DISPONIBLE
+            '',                    // DIFERENCIA
+            totalCostoAsignado,    // COSTO ASIGNADO  ✅
+            '',                    // COSTO CONSUMIDO
+            '',                    // BALANCE
+            ''                     // ESTADO
+        ]);
+        
+        // 3. DIFERENCIA TOTAL
+        datos.push([
+            '📊 DIFERENCIA TOTAL', // PROYECTO
+            '',                    // SOLPED
+            '',                    // MATERIALES
+            '',                    // ASIGNADO
+            '',                    // CONSUMIDO
+            '',                    // DISPONIBLE
+            totalDiferencia,       // DIFERENCIA  ✅
+            '',                    // COSTO ASIGNADO
+            '',                    // COSTO CONSUMIDO
+            totalBalance,          // BALANCE  ✅
+            totalBalance >= 0 ? '✅ OK' : '⚠️ SOBRE COSTO'
+        ]);
+        
+        // 4. RESUMEN GENERAL (TODOS LOS TOTALES JUNTOS)
+        datos.push([
+            '📊 RESUMEN GENERAL',
+            '',
+            totalMateriales,
+            totalAsignado,
+            totalConsumido,
+            totalDisponible,
+            totalDiferencia,
+            totalCostoAsignado,
+            totalCostoConsumido,
+            totalBalance,
+            totalBalance >= 0 ? '✅ OK' : '⚠️ SOBRE COSTO'
+        ]);
+        
+        const ws = XLSX.utils.aoa_to_sheet(datos);
+        
+        // AJUSTAR ANCHO DE COLUMNAS
+        ws['!cols'] = [
+            { wch: 30 },  // PROYECTO
+            { wch: 15 },  // SOLPED
+            { wch: 12 },  // MATERIALES
+            { wch: 15 },  // ASIGNADO
+            { wch: 15 },  // CONSUMIDO
+            { wch: 15 },  // DISPONIBLE
+            { wch: 22 },  // DIFERENCIA
+            { wch: 18 },  // COSTO ASIGNADO
+            { wch: 18 },  // COSTO CONSUMIDO
+            { wch: 22 },  // BALANCE
+            { wch: 15 }   // ESTADO
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, ws, 'RESUMEN EJECUTIVO');
+        XLSX.writeFile(wb, `resumen_ejecutivo_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ Reporte Excel descargado correctamente.');
+    } catch (error) {
+        console.error(error);
+        alert('❌ Error: ' + error.message);
+    }
 }
-
 /* =========================================================
    REPORTE: POR PROYECTO
    ========================================================= */
 
-function generarReportePorProyecto() {
+function generarReportePorProyectoExcel() {
     const idProyecto = document.getElementById("reporte-proyecto").value;
     if (!idProyecto) {
         alert("Seleccione un proyecto.");
@@ -2516,102 +2624,146 @@ function generarReportePorProyecto() {
         return;
     }
     
-    const titulo = proyecto.TITULO || proyecto.titulo || "";
-    const solped = proyecto.SOLPED || proyecto.solped || "";
-    
-    let reporte = "========================================\n";
-    reporte += `📋 REPORTE DEL PROYECTO: ${titulo}\n`;
-    reporte += `SOLPED: ${solped}\n`;
-    reporte += `Fecha: ${fechaActual()}\n`;
-    reporte += "========================================\n\n";
-    
-    // Movimientos del proyecto
-    const movimientos = [];
-    entradas.filter(e => (e.ID_PROYECTO || e.id_proyecto || "") === idProyecto).forEach(e => {
-        const material = buscarMaterial(e.CODIGO_MATERIAL || e.codigo_material || "");
-        const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
-        movimientos.push({
-            fecha: e.FECHA || e.fecha || "",
-            tipo: "ENTRADA",
-            codigo: e.CODIGO_MATERIAL || e.codigo_material || "",
-            descripcion: material ? descripcionMaterial(material) : "",
-            cantidad: e.CANTIDAD || e.cantidad || 0,
-            precio: precio,
-            total: (e.CANTIDAD || 0) * precio,
-            detalle: e.PROVEEDOR || e.proveedor || ""
+    try {
+        const wb = XLSX.utils.book_new();
+        
+        const titulo = proyecto.TITULO || proyecto.titulo || "";
+        const solped = proyecto.SOLPED || proyecto.solped || "";
+        const hacienda = proyecto.HACIENDA || proyecto.hacienda || "";
+        const suerte = proyecto.SUERTE || proyecto.suerte || "";
+        
+        // =========================================================
+        // 🔥 HOJA 1: BALANCE ECONÓMICO DEL PROYECTO
+        // =========================================================
+        const balanceData = [];
+        
+        balanceData.push(['BALANCE ECONÓMICO DEL PROYECTO']);
+        balanceData.push(['']);
+        balanceData.push(['Título:', titulo]);
+        balanceData.push(['SOLPED:', solped]);
+        balanceData.push(['Hacienda:', hacienda]);
+        balanceData.push(['Suerte:', suerte]);
+        balanceData.push(['']);
+        balanceData.push(['DESCRIPCIÓN', 'ASIGNADO', 'CONSUMIDO', 'DISPONIBLE', 'PRECIO', 'COSTO ASIGNADO', 'COSTO CONSUMIDO', 'DIFERENCIA']);
+        
+        const registros = proyectoMateriales.filter(r => {
+            const pid = r.ID_PROYECTO || r.id_proyecto || "";
+            return String(pid).trim() === String(idProyecto).trim();
         });
-    });
-    
-    consumos.filter(c => (c.ID_PROYECTO || c.id_proyecto || "") === idProyecto).forEach(c => {
-        const material = buscarMaterial(c.CODIGO_MATERIAL || c.codigo_material || "");
-        const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
-        movimientos.push({
-            fecha: c.FECHA || c.fecha || "",
-            tipo: c.TIPO_USO === "MOVIMIENTO" ? "TRASLADO" : "CONSUMO",
-            codigo: c.CODIGO_MATERIAL || c.codigo_material || "",
-            descripcion: material ? descripcionMaterial(material) : "",
-            cantidad: c.CANTIDAD || c.cantidad || 0,
-            precio: precio,
-            total: (c.CANTIDAD || 0) * precio,
-            detalle: c.OBSERVACION || c.observacion || ""
+        
+        let totalAsignado = 0;
+        let totalConsumido = 0;
+        let totalDisponible = 0;
+        let totalCostoAsignado = 0;
+        let totalCostoConsumido = 0;
+        let totalDiferencia = 0;
+        
+        registros.forEach(r => {
+            const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
+            const material = buscarMaterial(codigo);
+            const descripcion = material ? descripcionMaterial(material) : codigo;
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
+            const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
+            const disponible = asignado - consumido;
+            const diferencia = asignado - consumido;
+            const costoAsignado = asignado * precio;
+            const costoConsumido = consumido * precio;
+            const diferenciaCosto = costoAsignado - costoConsumido;
+            
+            totalAsignado += asignado;
+            totalConsumido += consumido;
+            totalDisponible += disponible;
+            totalCostoAsignado += costoAsignado;
+            totalCostoConsumido += costoConsumido;
+            totalDiferencia += diferenciaCosto;
+            
+            balanceData.push([
+                descripcion,
+                asignado,
+                consumido,
+                disponible,
+                precio,
+                costoAsignado,
+                costoConsumido,
+                diferenciaCosto
+            ]);
         });
-    });
-    
-    movimientos.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
-    
-    reporte += "📊 MOVIMIENTOS\n";
-    reporte += "----------------------------------------\n";
-    reporte += "FECHA | TIPO | MATERIAL | CANTIDAD | PRECIO | TOTAL | DETALLE\n";
-    reporte += "----------------------------------------\n";
-    
-    let totalGeneral = 0;
-    movimientos.forEach(m => {
-        reporte += `${fechaVisible(m.fecha)} | ${m.tipo} | ${m.descripcion || m.codigo} | ${formatearNumero(m.cantidad)} | ${formatearMoneda(m.precio)} | ${formatearMoneda(m.total)} | ${m.detalle}\n`;
-        totalGeneral += m.total;
-    });
-    
-    reporte += "\n----------------------------------------\n";
-    reporte += `💰 TOTAL MOVIMIENTOS: ${formatearMoneda(totalGeneral)}\n`;
-    reporte += "----------------------------------------\n";
-    
-    // Resumen del proyecto
-    const registros = proyectoMateriales.filter(r => {
-        const pid = r.ID_PROYECTO || r.id_proyecto || "";
-        return String(pid).trim() === String(idProyecto).trim();
-    });
-    
-    let totalAsignado = 0;
-    let totalConsumido = 0;
-    let totalCostoAsignado = 0;
-    let totalCostoConsumido = 0;
-    
-    registros.forEach(r => {
-        const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
-        const material = buscarMaterial(codigo);
-        const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
-        const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
-        const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
-        totalAsignado += asignado;
-        totalConsumido += consumido;
-        totalCostoAsignado += asignado * precio;
-        totalCostoConsumido += consumido * precio;
-    });
-    
-    const balance = totalCostoAsignado - totalCostoConsumido;
-    
-    reporte += "\n📊 RESUMEN ECONÓMICO\n";
-    reporte += "----------------------------------------\n";
-    reporte += `💰 Costo Asignado: ${formatearMoneda(totalCostoAsignado)}\n`;
-    reporte += `🔥 Costo Consumido: ${formatearMoneda(totalCostoConsumido)}\n`;
-    reporte += `📊 Balance: ${formatearMoneda(balance)}\n`;
-    reporte += `   Estado: ${balance >= 0 ? "✅ Presupuesto OK" : "⚠️ Sobre costo"}\n`;
-    reporte += "========================================\n";
-    reporte += "📊 FIN DEL REPORTE\n";
-    reporte += "========================================\n";
-    
-    descargarReporte(reporte, `reporte_proyecto_${titulo.replace(/\s/g, "_")}_${new Date().toISOString().slice(0,10)}.txt`);
+        
+        // 🔥 FILA DE TOTALES
+        balanceData.push(['📊 TOTALES', totalAsignado, totalConsumido, totalDisponible, '', totalCostoAsignado, totalCostoConsumido, totalDiferencia]);
+        
+        // 🔥 FILA DE BALANCE FINAL
+        const balanceFinal = totalCostoAsignado - totalCostoConsumido;
+        balanceData.push(['📊 BALANCE FINAL', '', '', '', '', '', '', balanceFinal]);
+        balanceData.push(['📊 ESTADO', '', '', '', '', '', '', balanceFinal >= 0 ? '✅ PRESUPUESTO OK' : '⚠️ SOBRE COSTO']);
+        
+        const wsBalance = XLSX.utils.aoa_to_sheet(balanceData);
+        wsBalance['!cols'] = [
+            { wch: 30 },  // DESCRIPCIÓN
+            { wch: 15 },  // ASIGNADO
+            { wch: 15 },  // CONSUMIDO
+            { wch: 15 },  // DISPONIBLE
+            { wch: 15 },  // PRECIO
+            { wch: 18 },  // COSTO ASIGNADO
+            { wch: 18 },  // COSTO CONSUMIDO
+            { wch: 18 }   // DIFERENCIA
+        ];
+        XLSX.utils.book_append_sheet(wb, wsBalance, 'BALANCE');
+        
+        // =========================================================
+        // HOJA 2: MOVIMIENTOS
+        // =========================================================
+        const movimientos = [];
+        movimientos.push(['FECHA', 'TIPO', 'MATERIAL', 'CANTIDAD', 'PRECIO', 'TOTAL', 'DETALLE']);
+        
+        entradas.filter(e => (e.ID_PROYECTO || e.id_proyecto || "") === idProyecto).forEach(e => {
+            const material = buscarMaterial(e.CODIGO_MATERIAL || e.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            movimientos.push([
+                e.FECHA || e.fecha || '',
+                'ENTRADA',
+                material ? descripcionMaterial(material) : '',
+                e.CANTIDAD || e.cantidad || 0,
+                precio,
+                (e.CANTIDAD || 0) * precio,
+                e.PROVEEDOR || e.proveedor || ''
+            ]);
+        });
+        
+        consumos.filter(c => (c.ID_PROYECTO || c.id_proyecto || "") === idProyecto).forEach(c => {
+            const material = buscarMaterial(c.CODIGO_MATERIAL || c.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            movimientos.push([
+                c.FECHA || c.fecha || '',
+                c.TIPO_USO === "MOVIMIENTO" ? 'TRASLADO' : 'CONSUMO',
+                material ? descripcionMaterial(material) : '',
+                c.CANTIDAD || c.cantidad || 0,
+                precio,
+                (c.CANTIDAD || 0) * precio,
+                c.OBSERVACION || c.observacion || ''
+            ]);
+        });
+        
+        const wsMov = XLSX.utils.aoa_to_sheet(movimientos);
+        wsMov['!cols'] = [
+            { wch: 20 },  // FECHA
+            { wch: 15 },  // TIPO
+            { wch: 30 },  // MATERIAL
+            { wch: 15 },  // CANTIDAD
+            { wch: 15 },  // PRECIO
+            { wch: 18 },  // TOTAL
+            { wch: 30 }   // DETALLE
+        ];
+        XLSX.utils.book_append_sheet(wb, wsMov, 'MOVIMIENTOS');
+        
+        XLSX.writeFile(wb, `reporte_proyecto_${titulo.replace(/\s/g, "_")}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ Reporte Excel descargado correctamente.');
+    } catch (error) {
+        console.error(error);
+        alert('❌ Error: ' + error.message);
+    }
 }
-
 /* =========================================================
    REPORTE: POR TIPO DE MOVIMIENTO
    ========================================================= */
