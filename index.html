@@ -320,18 +320,24 @@
     </header>
 
     <nav class="app-nav">
-        <button type="button" onclick="mostrarSeccion('proyectos')">📋 Proyectos</button>
-        <button type="button" onclick="mostrarSeccion('inicio')">🏠 Inicio</button>
-        <button type="button" onclick="mostrarSeccion('inventario')">📦 Inventario</button>
-        <button type="button" onclick="mostrarSeccion('movimientos')">🔄 Movimientos</button>
-        <button type="button" onclick="mostrarSeccion('entradas')">➕ Entradas</button>
-        <button type="button" onclick="mostrarSeccion('consumos')">➖ Consumos</button>
-        <button type="button" onclick="mostrarSeccion('ajustes')">⚙️ Ajustes</button>
-        <button type="button" onclick="mostrarFormularioNuevoMaterial()" style="background:#8b5cf6;color:white;">➕ Nuevo Material</button>
-        <button type="button" onclick="document.getElementById('input-importar-excel').click()" style="background:#3b82f6;color:white;">📊 Importar Excel</button>
-        <button type="button" onclick="exportarReporteCompleto()" style="background:#f59e0b;color:white;">📄 Reporte Texto</button>
-        <button type="button" onclick="exportarReporteExcel()" style="background:#10b981;color:white;">📊 Reporte Excel</button>
-    </nav>
+    <button type="button" onclick="mostrarSeccion('proyectos')">📋 Proyectos</button>
+    <button type="button" onclick="mostrarSeccion('inicio')">🏠 Inicio</button>
+    <button type="button" onclick="mostrarSeccion('inventario')">📦 Inventario</button>
+    <button type="button" onclick="mostrarSeccion('movimientos')">🔄 Movimientos</button>
+    <button type="button" onclick="mostrarSeccion('entradas')">➕ Entradas</button>
+    <button type="button" onclick="mostrarSeccion('consumos')">➖ Consumos</button>
+    <button type="button" onclick="mostrarSeccion('ajustes')">⚙️ Ajustes</button>
+    
+    <button type="button" onclick="mostrarFormularioNuevoMaterial()" style="background:#8b5cf6;color:white;">➕ Nuevo Material</button>
+    <button type="button" onclick="document.getElementById('input-importar-excel').click()" style="background:#3b82f6;color:white;">📊 Importar Excel</button>
+    <button type="button" onclick="exportarReporteCompleto()" style="background:#f59e0b;color:white;">📄 Reporte Texto</button>
+    <button type="button" onclick="exportarReporteExcel()" style="background:#10b981;color:white;">📊 Reporte Excel</button>
+    
+    <!-- 🔥 NUEVOS BOTONES PARA SINCronIZAR -->
+    <button type="button" onclick="exportarJSON()" style="background:#ef4444;color:white;">📤 Exportar JSON</button>
+    <button type="button" onclick="document.getElementById('input-importar-json').click()" style="background:#8b5cf6;color:white;">📥 Importar JSON</button>
+</nav>
+<input type="file" id="input-importar-json" accept=".json" style="display:none;" onchange="importarJSON(event)">
 
     <main class="app-container">
 
