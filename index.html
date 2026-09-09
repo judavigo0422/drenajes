@@ -10,7 +10,200 @@
     <link rel="icon" href="icon-192x192.png" type="image/png">
     <link rel="apple-touch-icon" href="icon-192x192.png">
     <style>
-        /* ESTILOS PARA EL DETALLE FLOTANTE */
+        /* ESTILOS COMPLETOS */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+        }
+        .app-header {
+            background: #0f766e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .app-header h1 {
+            margin: 0;
+        }
+        .app-header p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+        }
+        .app-nav {
+            background: #0d5f58;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 10px;
+            justify-content: center;
+        }
+        .app-nav button {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .app-nav button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .seccion {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .seccion.activa {
+            display: block;
+        }
+        .section-header {
+            margin-bottom: 20px;
+        }
+        .section-header h2 {
+            color: #0f766e;
+        }
+        .section-header p {
+            color: #666;
+        }
+        .formulario {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .btn-primary {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary:hover {
+            background: #0d5f58;
+        }
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #0f766e;
+            color: white;
+            padding: 12px 10px;
+            text-align: left;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .sin-datos {
+            text-align: center;
+            color: #999;
+            padding: 30px !important;
+        }
+        .estado-disponible {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        .estado-agotado {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .dashboard-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .dashboard-card strong {
+            display: block;
+            font-size: 24px;
+            color: #0f766e;
+        }
+        .dashboard-card .label {
+            font-size: 12px;
+            color: #666;
+        }
+        .card-icon {
+            font-size: 24px;
+        }
         #detalle-proyecto {
             position: fixed;
             top: 0;
@@ -24,11 +217,9 @@
             box-sizing: border-box;
             display: none;
         }
-        
         #detalle-proyecto.activa {
             display: block !important;
         }
-        
         .btn-cerrar-flotante {
             position: sticky;
             top: 0;
@@ -43,240 +234,38 @@
             z-index: 10000;
             margin-bottom: 20px;
         }
-        
-        .btn-cerrar-flotante:hover {
-            background: #dc2626;
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .dashboard-card {
+        .documento-item {
             background: white;
-            padding: 15px;
+            border: 1px solid #e5e7eb;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
             display: flex;
             align-items: center;
             gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
         }
-        
-        .card-icon {
-            font-size: 28px;
-        }
-        
-        .card-label {
-            display: block;
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            overflow: auto;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        table {
+        #modal-reportes {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        
-        th {
-            background: #0f766e;
-            color: white;
-            padding: 12px 10px;
-            text-align: left;
-            white-space: nowrap;
-        }
-        
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .toolbar {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        
-        .btn-primary {
-            background: #0f766e;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .btn-primary:hover {
-            background: #0d5f58;
-        }
-        
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .btn-secondary:hover {
-            background: #4b5563;
-        }
-        
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-        
-        .formulario {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .section-header {
-            margin-bottom: 20px;
-        }
-        
-        .section-header h2 {
-            margin: 0 0 5px 0;
-            color: #0f766e;
-        }
-        
-        .section-header h3 {
-            margin: 0 0 5px 0;
-            color: #0f766e;
-        }
-        
-        .section-header p {
-            margin: 0;
-            color: #666;
-        }
-        
-        .sin-datos {
-            text-align: center;
-            color: #999;
-            padding: 30px !important;
-        }
-        
-        .estado-disponible {
-            color: #16a34a;
-            font-weight: 600;
-        }
-        
-        .estado-agotado {
-            color: #ef4444;
-            font-weight: 600;
-        }
-        
-        .app-header {
-            background: #0f766e;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .app-header h1 {
-            margin: 0;
-        }
-        
-        .app-header p {
-            margin: 5px 0 0 0;
-            opacity: 0.8;
-        }
-        
-        .app-nav {
-            background: #0d5f58;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            padding: 10px;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 99999;
+            align-items: center;
             justify-content: center;
         }
-        
-        .app-nav button {
-            background: transparent;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+        #modal-reportes>div {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
         }
-        
-        .app-nav button:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .app-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .seccion {
-            display: none;
-        }
-        
-        .seccion.activa {
-            display: block;
-        }
-        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -293,21 +282,6 @@
             }
         }
     </style>
-    <!--
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./sw.js')
-                .then(function(reg) {
-                    console.log('✅ Service Worker registrado correctamente');
-                })
-                .catch(function(err) {
-                    console.log('❌ Error al registrar Service Worker:', err);
-                });
-        });
-    }
-</script>
--->
 </head>
 
 <body>
@@ -318,28 +292,82 @@
             <p>Gestión y control de inventario de materiales</p>
         </div>
     </header>
-<nav class="app-nav">
-    <button type="button" onclick="mostrarSeccion('proyectos')">📋 Proyectos</button>
-    <button type="button" onclick="mostrarSeccion('inicio')">🏠 Inicio</button>
-    <button type="button" onclick="mostrarSeccion('inventario')">📦 Inventario</button>
-    <button type="button" onclick="mostrarSeccion('movimientos')">🔄 Movimientos</button>
-    <button type="button" onclick="mostrarSeccion('entradas')">➕ Entradas</button>
-    <button type="button" onclick="mostrarSeccion('consumos')">➖ Consumos</button>
-    <button type="button" onclick="mostrarSeccion('ajustes')">⚙️ Ajustes</button>
-    
-    <button type="button" onclick="mostrarFormularioNuevoMaterial()" style="background:#8b5cf6;color:white;">➕ Nuevo Material</button>
-    <button type="button" onclick="document.getElementById('input-importar-excel').click()" style="background:#3b82f6;color:white;">📊 Importar Excel</button>
-    <button type="button" onclick="exportarReporteCompleto()" style="background:#f59e0b;color:white;">📄 Reporte Texto</button>
-    <button type="button" onclick="exportarReporteExcel()" style="background:#10b981;color:white;">📊 Reporte Excel</button>
-    
-    <!-- 🔥 BOTONES PARA SINCRONIZAR -->
-    <button type="button" onclick="exportarJSON()" style="background:#ef4444;color:white;">📤 Exportar JSON</button>
-    <button type="button" onclick="document.getElementById('input-importar-json').click()" style="background:#8b5cf6;color:white;">📥 Importar JSON</button>
-    
-    <!-- 🔥 NUEVO BOTÓN PARA REPORTES -->
-    <button type="button" onclick="mostrarReportes()" style="background:#0f766e;color:white;">📊 Reportes</button>
-</nav>
-<input type="file" id="input-importar-json" accept=".json" style="display:none;" onchange="importarJSON(event)">
+
+    <nav class="app-nav">
+        <button type="button" onclick="mostrarSeccion('proyectos')">📋 Proyectos</button>
+        <button type="button" onclick="mostrarSeccion('inicio')">🏠 Inicio</button>
+        <button type="button" onclick="mostrarSeccion('inventario')">📦 Inventario</button>
+        <button type="button" onclick="mostrarSeccion('movimientos')">🔄 Movimientos</button>
+        <button type="button" onclick="mostrarSeccion('entradas')">➕ Entradas</button>
+        <button type="button" onclick="mostrarSeccion('consumos')">➖ Consumos</button>
+        <button type="button" onclick="mostrarSeccion('ajustes')">⚙️ Ajustes</button>
+        <button type="button" onclick="mostrarFormularioNuevoMaterial()" style="background:#8b5cf6;color:white;">➕ Nuevo Material</button>
+        <button type="button" onclick="document.getElementById('input-importar-excel').click()" style="background:#3b82f6;color:white;">📊 Importar Excel</button>
+        <button type="button" onclick="exportarReporteCompleto()" style="background:#f59e0b;color:white;">📄 Reporte Texto</button>
+        <button type="button" onclick="exportarReporteExcel()" style="background:#10b981;color:white;">📊 Reporte Excel</button>
+        <button type="button" onclick="mostrarReportes()" style="background:#0f766e;color:white;">📊 Reportes</button>
+        <button type="button" onclick="exportarJSON()" style="background:#ef4444;color:white;">📤 Exportar JSON</button>
+        <button type="button" onclick="document.getElementById('input-importar-json').click()" style="background:#8b5cf6;color:white;">📥 Importar JSON</button>
+    </nav>
+    <input type="file" id="input-importar-json" accept=".json" style="display:none;" onchange="importarJSON(event)">
+
+    <!-- =========================================================
+       MODAL DE REPORTES
+       ========================================================= -->
+    <div id="modal-reportes">
+        <div>
+            <h2 style="color:#0f766e; margin-top:0;">📊 Generar Reporte</h2>
+            
+            <div class="form-group">
+                <label for="reporte-tipo">Tipo de reporte</label>
+                <select id="reporte-tipo" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="resumen">📊 Resumen Ejecutivo (todos los proyectos)</option>
+                    <option value="proyecto">📋 Por Proyecto</option>
+                    <option value="movimientos">📋 Por Tipo de Movimiento</option>
+                    <option value="completo">📋 Reporte Completo</option>
+                </select>
+            </div>
+            
+            <div id="contenedor-select-proyecto" style="display:none;">
+                <div class="form-group">
+                    <label for="reporte-proyecto">Seleccionar Proyecto</label>
+                    <select id="reporte-proyecto" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                        <option value="">Seleccione un proyecto</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="contenedor-select-tipo" style="display:none;">
+                <div class="form-group">
+                    <label for="reporte-tipo-movimiento">Seleccionar Tipo</label>
+                    <select id="reporte-tipo-movimiento" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                        <option value="">Todos</option>
+                        <option value="ENTRADA">Entradas</option>
+                        <option value="CONSUMO">Consumos</option>
+                        <option value="AJUSTE">Ajustes</option>
+                        <option value="TRASLADO">Traslados</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="generarReporte()" class="btn-primary" style="flex:1;">📊 Generar Reporte</button>
+                <button onclick="cerrarReportes()" class="btn-secondary">❌ Cerrar</button>
+            </div>
+            
+            <!-- 🔥 BALANCE EN PANTALLA -->
+            <div id="resultado-balance" style="margin-top: 15px; padding: 10px; background: #f0fdf4; border-radius: 8px; border: 2px solid #0f766e; display: none;">
+                <h3 style="color: #0f766e; margin: 0;">📊 BALANCE ECONÓMICO</h3>
+                <div id="contenido-balance" style="font-size: 14px; margin-top: 10px;"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <main class="app-container">
+
+        <input type="file" id="input-importar-excel" accept=".xlsx,.xls" style="display:none;" onchange="importarExcel(event)">
+
         <!-- =====================================================
         PROYECTOS
         ===================================================== -->
@@ -352,58 +380,13 @@
                 <input type="search" id="buscar-proyectos" placeholder="🔎 Buscar proyecto, SOLPED, hacienda o suerte..." style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
                 <button type="button" class="btn-primary" onclick="mostrarFormularioProyecto()">➕ Nuevo proyecto</button>
             </div>
-
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Título</th>
-                       <!-- =========================================================
-   MODAL DE REPORTES
-   ========================================================= -->
-<div id="modal-reportes" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; align-items:center; justify-content:center;">
-    <div style="background:white; padding:30px; border-radius:15px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto;">
-        <h2 style="color:#0f766e; margin-top:0;">📊 Generar Reporte</h2>
-        
-        <div class="form-group">
-            <label for="reporte-tipo">Tipo de reporte</label>
-            <select id="reporte-tipo" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-                <option value="resumen">📊 Resumen Ejecutivo (todos los proyectos)</option>
-                <option value="proyecto">📋 Por Proyecto</option>
-                <option value="movimientos">📋 Por Tipo de Movimiento</option>
-                <option value="completo">📋 Reporte Completo</option>
-            </select>
-        </div>
-        
-        <div id="contenedor-select-proyecto" style="display:none;">
-            <div class="form-group">
-                <label for="reporte-proyecto">Seleccionar Proyecto</label>
-                <select id="reporte-proyecto" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-                    <option value="">Seleccione un proyecto</option>
-                </select>
-            </div>
-        </div>
-        
-        <div id="contenedor-select-tipo" style="display:none;">
-            <div class="form-group">
-                <label for="reporte-tipo-movimiento">Seleccionar Tipo</label>
-                <select id="reporte-tipo-movimiento" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-                    <option value="">Todos</option>
-                    <option value="ENTRADA">Entradas</option>
-                    <option value="CONSUMO">Consumos</option>
-                    <option value="AJUSTE">Ajustes</option>
-                    <option value="TRASLADO">Traslados</option>
-                </select>
-            </div>
-        </div>
-        
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="generarReporte()" class="btn-primary" style="flex:1;">📊 Generar Reporte</button>
-            <button onclick="cerrarReportes()" class="btn-secondary">❌ Cerrar</button>
-        </div>
-    </div>
-</div>     <th>SOLPED</th>
+                            <th>SOLPED</th>
                             <th>Hacienda</th>
                             <th>Suerte</th>
                             <th>Estado</th>
@@ -555,13 +538,8 @@
                 <div class="dashboard-card"><span class="card-icon">✅</span><div><span class="card-label">Disponibles</span><strong id="total-disponibles">0</strong></div></div>
                 <div class="dashboard-card"><span class="card-icon">⚠️</span><div><span class="card-label">Agotados</span><strong id="total-agotados">0</strong></div></div>
                 <div class="dashboard-card"><span class="card-icon">💰</span><div><span class="card-label">Valor inventario</span><strong id="valor-inventario">$0</strong></div></div>
-          <div class="dashboard-card">
-    <span class="card-icon">💸</span>
-    <div>
-        <span class="card-label">Gastado en Consumos</span>
-        <strong id="total-gastado">$0</strong>
-    </div>
-</div>
+                <div class="dashboard-card"><span class="card-icon">💸</span><div><span class="card-label">Gastado en Consumos</span><strong id="total-gastado">$0</strong></div></div>
+            </div>
         </section>
 
         <!-- =====================================================
@@ -606,152 +584,132 @@
             <div class="table-container">
                 <table>
                     <thead>
-    <tr>
-        <th>Fecha</th>
-        <th>Tipo</th>
-        <th>Código</th>
-        <th>Descripción</th>
-        <th>Cantidad</th>
-        <th>Proyecto</th>
-        <th>SOLPED</th>
-        <th>Responsable</th>
-        <th>Usuario</th>
-        <th>Observación</th>
-    </tr>
-</thead>
-<tbody id="tbody-movimientos"></tbody>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Código</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Proyecto</th>
+                            <th>SOLPED</th>
+                            <th>Responsable</th>
+                            <th>Usuario</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-movimientos"></tbody>
                 </table>
             </div>
         </section>
 
         <!-- =====================================================
-     ENTRADAS
-     ===================================================== -->
-
-<section id="entradas" class="seccion">
-    <div class="section-header">
-        <h2>➕ Registrar entrada</h2>
-        <p>Registra la recepción de materiales.</p>
-    </div>
-
-    <form id="form-entrada" class="formulario">
-        <div class="form-group">
-            <label for="entrada-material">Material</label>
-            <select id="entrada-material" required>
-                <option value="">Seleccione un material</option>
-            </select>
-        </div>
-
-        <!-- 🔥 CAMPO PROYECTO (CORRECTAMENTE UBICADO) -->
-        <div class="form-group">
-            <label for="entrada-proyecto">Proyecto (opcional)</label>
-            <select id="entrada-proyecto">
-                <option value="">Asignar a proyecto</option>
-            </select>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="entrada-cantidad">Cantidad</label>
-                <input type="number" id="entrada-cantidad" min="0.01" step="any" required>
+        ENTRADAS
+        ===================================================== -->
+        <section id="entradas" class="seccion">
+            <div class="section-header">
+                <h2>➕ Registrar entrada</h2>
+                <p>Registra la recepción de materiales.</p>
             </div>
-            <div class="form-group">
-                <label for="entrada-precio">Precio unitario</label>
-                <input type="number" id="entrada-precio" min="0" step="any" placeholder="Opcional">
+            <form id="form-entrada" class="formulario">
+                <div class="form-group">
+                    <label for="entrada-material">Material</label>
+                    <select id="entrada-material" required>
+                        <option value="">Seleccione un material</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="entrada-proyecto">Proyecto (opcional)</label>
+                    <select id="entrada-proyecto">
+                        <option value="">Asignar a proyecto</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="entrada-cantidad">Cantidad</label>
+                        <input type="number" id="entrada-cantidad" min="0.01" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="entrada-precio">Precio unitario</label>
+                        <input type="number" id="entrada-precio" min="0" step="any" placeholder="Opcional">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="entrada-solped">SOLPED</label>
+                    <input type="text" id="entrada-solped" placeholder="Número de SOLPED (opcional)">
+                </div>
+                <div class="form-group">
+                    <label for="entrada-proveedor">Proveedor</label>
+                    <input type="text" id="entrada-proveedor" placeholder="Proveedor">
+                </div>
+                <div class="form-group">
+                    <label for="entrada-observacion">Observación</label>
+                    <textarea id="entrada-observacion" rows="3" placeholder="Observaciones de la entrada..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary">➕ Registrar entrada</button>
+            </form>
+        </section>
+
+        <!-- =====================================================
+        CONSUMOS
+        ===================================================== -->
+        <section id="consumos" class="seccion">
+            <div class="section-header">
+                <h2>➖ Registrar consumo</h2>
+                <p>Registra la salida de materiales.</p>
             </div>
-        </div>
+            <form id="form-consumo" class="formulario">
+                <div class="form-group">
+                    <label for="consumo-proyecto">Proyecto</label>
+                    <select id="consumo-proyecto" required>
+                        <option value="">Seleccione un proyecto</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="consumo-material">Material</label>
+                    <select id="consumo-material" required>
+                        <option value="">Seleccione un material</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="consumo-cantidad">Cantidad</label>
+                    <input type="number" id="consumo-cantidad" min="0.01" step="any" required>
+                </div>
+                <div class="form-group">
+                    <label for="consumo-zona">Dren / Zona</label>
+                    <input type="text" id="consumo-zona" placeholder="Dren o zona">
+                </div>
+                <div class="form-group">
+                    <label for="consumo-tipo-uso">Tipo de uso</label>
+                    <select id="consumo-tipo-uso">
+                        <option value="">Seleccione</option>
+                        <option value="MANTENIMIENTO">Mantenimiento</option>
+                        <option value="RIEGO">Riego</option>
+                        <option value="DRENAJE">Drenaje</option>
+                        <option value="CAMPO">Campo</option>
+                        <option value="MOVIMIENTO">Movimiento entre proyectos</option>
+                        <option value="OTRO">Otro</option>
+                    </select>
+                </div>
+                <div id="contenedor-proyecto-destino" style="display:none;">
+                    <div class="form-group">
+                        <label for="consumo-proyecto-destino">Proyecto Destino</label>
+                        <select id="consumo-proyecto-destino">
+                            <option value="">Seleccione proyecto destino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="consumo-responsable">Responsable</label>
+                    <input type="text" id="consumo-responsable" placeholder="Responsable">
+                </div>
+                <div class="form-group">
+                    <label for="consumo-observacion">Observación</label>
+                    <textarea id="consumo-observacion" rows="3" placeholder="Observaciones del consumo..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary">➖ Registrar consumo</button>
+            </form>
+        </section>
 
-        <div class="form-group">
-            <label for="entrada-solped">SOLPED</label>
-            <input type="text" id="entrada-solped" placeholder="Número de SOLPED (opcional)">
-        </div>
-
-        <div class="form-group">
-            <label for="entrada-proveedor">Proveedor</label>
-            <input type="text" id="entrada-proveedor" placeholder="Proveedor">
-        </div>
-
-        <div class="form-group">
-            <label for="entrada-observacion">Observación</label>
-            <textarea id="entrada-observacion" rows="3" placeholder="Observaciones de la entrada..."></textarea>
-        </div>
-
-        <button type="submit" class="btn-primary">➕ Registrar entrada</button>
-    </form>
-</section>
-
-     <!-- =====================================================
-     CONSUMOS
-     ===================================================== -->
-
-<section id="consumos" class="seccion">
-    <div class="section-header">
-        <h2>➖ Registrar consumo</h2>
-        <p>Registra la salida de materiales.</p>
-    </div>
-
-    <form id="form-consumo" class="formulario">
-        <!-- 🔥 SELECCIONAR PROYECTO -->
-        <div class="form-group">
-            <label for="consumo-proyecto">Proyecto</label>
-            <select id="consumo-proyecto" required>
-                <option value="">Seleccione un proyecto</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="consumo-material">Material</label>
-            <select id="consumo-material" required>
-                <option value="">Seleccione un material</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="consumo-cantidad">Cantidad</label>
-            <input type="number" id="consumo-cantidad" min="0.01" step="any" required>
-        </div>
-
-        <div class="form-group">
-            <label for="consumo-zona">Dren / Zona</label>
-            <input type="text" id="consumo-zona" placeholder="Dren o zona">
-        </div>
-
-        <div class="form-group">
-            <label for="consumo-tipo-uso">Tipo de uso</label>
-            <select id="consumo-tipo-uso">
-                <option value="">Seleccione</option>
-                <option value="MANTENIMIENTO">Mantenimiento</option>
-                <option value="RIEGO">Riego</option>
-                <option value="DRENAJE">Drenaje</option>
-                <option value="CAMPO">Campo</option>
-                <option value="MOVIMIENTO">Movimiento entre proyectos</option>
-                <option value="OTRO">Otro</option>
-            </select>
-        </div>
-
-        <!-- 🔥 CAMPO PROYECTO DESTINO (SOLO CUANDO TIPO DE USO = MOVIMIENTO) -->
-        <div id="contenedor-proyecto-destino" style="display:none;">
-            <div class="form-group">
-                <label for="consumo-proyecto-destino">Proyecto Destino</label>
-                <select id="consumo-proyecto-destino">
-                    <option value="">Seleccione proyecto destino</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="consumo-responsable">Responsable</label>
-            <input type="text" id="consumo-responsable" placeholder="Responsable">
-        </div>
-
-        <div class="form-group">
-            <label for="consumo-observacion">Observación</label>
-            <textarea id="consumo-observacion" rows="3" placeholder="Observaciones del consumo..."></textarea>
-        </div>
-
-        <button type="submit" class="btn-primary">➖ Registrar consumo</button>
-    </form>
-</section>
         <!-- =====================================================
         AJUSTES
         ===================================================== -->
