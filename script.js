@@ -2749,7 +2749,338 @@ function descargarReporte(texto, nombreArchivo) {
     URL.revokeObjectURL(url);
     alert(`✅ Reporte "${nombreArchivo}" descargado correctamente.`);
 }
+/* =========================================================
+   REPORTES AVANZADOS EN EXCEL
+   ========================================================= */
 
+function mostrarReportes() {
+    const selectProyecto = document.getElementById("reporte-proyecto");
+    if (selectProyecto) {
+        selectProyecto.innerHTML = '<option value="">Seleccione un proyecto</option>';
+        proyectos.forEach(p => {
+            const id = p.ID_PROYECTO || p.ID || p.id || "";
+            const titulo = p.TITULO || p.titulo || "";
+            const solped = p.SOLPED || p.solped || "";
+            if (id) {
+                const option = document.createElement("option");
+                option.value = id;
+                option.textContent = `${titulo} - SOLPED: ${solped}`;
+                selectProyecto.appendChild(option);
+            }
+        });
+    }
+    
+    document.getElementById("modal-reportes").style.display = "flex";
+    
+    document.getElementById("reporte-tipo").onchange = function() {
+        const val = this.value;
+        document.getElementById("contenedor-select-proyecto").style.display = val === "proyecto" ? "block" : "none";
+        document.getElementById("contenedor-select-tipo").style.display = val === "movimientos" ? "block" : "none";
+    };
+}
+
+function cerrarReportes() {
+    document.getElementById("modal-reportes").style.display = "none";
+}
+
+function generarReporte() {
+    const tipo = document.getElementById("reporte-tipo").value;
+    
+    if (tipo === "resumen") {
+        generarResumenEjecutivoExcel();
+    } else if (tipo === "proyecto") {
+        generarReportePorProyectoExcel();
+    } else if (tipo === "movimientos") {
+        generarReportePorTipoMovimientoExcel();
+    } else if (tipo === "completo") {
+        generarReporteCompletoExcel();
+    }
+    
+    cerrarReportes();
+}
+
+/* =========================================================
+   REPORTE: RESUMEN EJECUTIVO EN EXCEL
+   ========================================================= */
+
+function generarResumenEjecutivoExcel() {
+    try {
+        const wb = XLSX.utils.book_new();
+        const datos = [];
+        
+        // Encabezados
+        datos.push(['PROYECTO', 'SOLPED', 'MATERIALES', 'ASIGNADO', 'CONSUMIDO', 'DISPONIBLE', 'COSTO ASIGNADO', 'COSTO CONSUMIDO', 'BALANCE', 'ESTADO']);
+        
+        proyectos.forEach(p => {
+            const id = p.ID_PROYECTO || p.ID || p.id || "";
+            const titulo = p.TITULO || p.titulo || "";
+            const solped = p.SOLPED || p.solped || "";
+            
+            const registros = proyectoMateriales.filter(r => {
+                const pid = r.ID_PROYECTO || r.id_proyecto || "";
+                return String(pid).trim() === String(id).trim();
+            });
+            
+            let totalAsignado = 0;
+            let totalConsumido = 0;
+            let totalCostoAsignado = 0;
+            let totalCostoConsumido = 0;
+            
+            registros.forEach(r => {
+                const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
+                const material = buscarMaterial(codigo);
+                const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+                const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
+                const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
+                totalAsignado += asignado;
+                totalConsumido += consumido;
+                totalCostoAsignado += asignado * precio;
+                totalCostoConsumido += consumido * precio;
+            });
+            
+            const disponible = totalAsignado - totalConsumido;
+            const balance = totalCostoAsignado - totalCostoConsumido;
+            
+            datos.push([
+                titulo,
+                solped,
+                registros.length,
+                totalAsignado,
+                totalConsumido,
+                disponible,
+                totalCostoAsignado,
+                totalCostoConsumido,
+                balance,
+                balance >= 0 ? '✅ OK' : '⚠️ SOBRE COSTO'
+            ]);
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(datos);
+        XLSX.utils.book_append_sheet(wb, ws, 'RESUMEN EJECUTIVO');
+        XLSX.writeFile(wb, `resumen_ejecutivo_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ Reporte Excel descargado correctamente.');
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+/* =========================================================
+   REPORTE: POR PROYECTO EN EXCEL
+   ========================================================= */
+
+function generarReportePorProyectoExcel() {
+    const idProyecto = document.getElementById("reporte-proyecto").value;
+    if (!idProyecto) {
+        alert("Seleccione un proyecto.");
+        return;
+    }
+    
+    const proyecto = buscarProyecto(idProyecto);
+    if (!proyecto) {
+        alert("No se encontró el proyecto.");
+        return;
+    }
+    
+    try {
+        const wb = XLSX.utils.book_new();
+        const datos = [];
+        
+        const titulo = proyecto.TITULO || proyecto.titulo || "";
+        const solped = proyecto.SOLPED || proyecto.solped || "";
+        
+        // Hoja de Movimientos
+        datos.push(['FECHA', 'TIPO', 'CÓDIGO', 'MATERIAL', 'CANTIDAD', 'PRECIO', 'TOTAL', 'DETALLE']);
+        
+        entradas.filter(e => (e.ID_PROYECTO || e.id_proyecto || "") === idProyecto).forEach(e => {
+            const material = buscarMaterial(e.CODIGO_MATERIAL || e.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            datos.push([
+                e.FECHA || e.fecha || '',
+                'ENTRADA',
+                e.CODIGO_MATERIAL || e.codigo_material || '',
+                material ? descripcionMaterial(material) : '',
+                e.CANTIDAD || e.cantidad || 0,
+                precio,
+                (e.CANTIDAD || 0) * precio,
+                e.PROVEEDOR || e.proveedor || ''
+            ]);
+        });
+        
+        consumos.filter(c => (c.ID_PROYECTO || c.id_proyecto || "") === idProyecto).forEach(c => {
+            const material = buscarMaterial(c.CODIGO_MATERIAL || c.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            datos.push([
+                c.FECHA || c.fecha || '',
+                c.TIPO_USO === "MOVIMIENTO" ? 'TRASLADO' : 'CONSUMO',
+                c.CODIGO_MATERIAL || c.codigo_material || '',
+                material ? descripcionMaterial(material) : '',
+                c.CANTIDAD || c.cantidad || 0,
+                precio,
+                (c.CANTIDAD || 0) * precio,
+                c.OBSERVACION || c.observacion || ''
+            ]);
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(datos);
+        XLSX.utils.book_append_sheet(wb, ws, 'MOVIMIENTOS');
+        
+        // Hoja de Resumen
+        const registros = proyectoMateriales.filter(r => {
+            const pid = r.ID_PROYECTO || r.id_proyecto || "";
+            return String(pid).trim() === String(idProyecto).trim();
+        });
+        
+        let totalAsignado = 0;
+        let totalConsumido = 0;
+        let totalCostoAsignado = 0;
+        let totalCostoConsumido = 0;
+        
+        const resumen = [['MATERIAL', 'ASIGNADO', 'CONSUMIDO', 'DISPONIBLE', 'PRECIO', 'COSTO ASIGNADO', 'COSTO CONSUMIDO']];
+        
+        registros.forEach(r => {
+            const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
+            const material = buscarMaterial(codigo);
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
+            const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
+            const disponible = asignado - consumido;
+            totalAsignado += asignado;
+            totalConsumido += consumido;
+            totalCostoAsignado += asignado * precio;
+            totalCostoConsumido += consumido * precio;
+            
+            resumen.push([
+                material ? descripcionMaterial(material) : codigo,
+                asignado,
+                consumido,
+                disponible,
+                precio,
+                asignado * precio,
+                consumido * precio
+            ]);
+        });
+        
+        const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
+        XLSX.utils.book_append_sheet(wb, wsResumen, 'RESUMEN');
+        
+        XLSX.writeFile(wb, `reporte_proyecto_${titulo.replace(/\s/g, "_")}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ Reporte Excel descargado correctamente.');
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+/* =========================================================
+   REPORTE: POR TIPO DE MOVIMIENTO EN EXCEL
+   ========================================================= */
+
+function generarReportePorTipoMovimientoExcel() {
+    const tipo = document.getElementById("reporte-tipo-movimiento").value;
+    const tipoLabel = tipo || "TODOS";
+    
+    try {
+        const wb = XLSX.utils.book_new();
+        const datos = [];
+        
+        datos.push(['FECHA', 'TIPO', 'PROYECTO', 'MATERIAL', 'CANTIDAD', 'PRECIO', 'TOTAL', 'DETALLE']);
+        
+        entradas.forEach(e => {
+            if (!tipo || tipo === "ENTRADA") {
+                const material = buscarMaterial(e.CODIGO_MATERIAL || e.codigo_material || "");
+                const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+                const proyecto = buscarProyecto(e.ID_PROYECTO || e.id_proyecto || "");
+                datos.push([
+                    e.FECHA || e.fecha || '',
+                    'ENTRADA',
+                    proyecto ? (proyecto.TITULO || proyecto.titulo || '') : '',
+                    material ? descripcionMaterial(material) : '',
+                    e.CANTIDAD || e.cantidad || 0,
+                    precio,
+                    (e.CANTIDAD || 0) * precio,
+                    e.PROVEEDOR || e.proveedor || ''
+                ]);
+            }
+        });
+        
+        consumos.forEach(c => {
+            const tipoConsumo = c.TIPO_USO === "MOVIMIENTO" ? "TRASLADO" : "CONSUMO";
+            if (!tipo || tipo === tipoConsumo || tipo === "CONSUMO") {
+                const material = buscarMaterial(c.CODIGO_MATERIAL || c.codigo_material || "");
+                const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+                const proyecto = buscarProyecto(c.ID_PROYECTO || c.id_proyecto || "");
+                datos.push([
+                    c.FECHA || c.fecha || '',
+                    tipoConsumo,
+                    proyecto ? (proyecto.TITULO || proyecto.titulo || '') : '',
+                    material ? descripcionMaterial(material) : '',
+                    c.CANTIDAD || c.cantidad || 0,
+                    precio,
+                    (c.CANTIDAD || 0) * precio,
+                    c.OBSERVACION || c.observacion || ''
+                ]);
+            }
+        });
+        
+        ajustes.forEach(a => {
+            if (!tipo || tipo === "AJUSTE") {
+                const material = buscarMaterial(a.CODIGO_MATERIAL || a.codigo_material || "");
+                const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+                datos.push([
+                    a.FECHA || a.fecha || '',
+                    'AJUSTE ' + (a.TIPO || ''),
+                    '',
+                    material ? descripcionMaterial(material) : '',
+                    a.CANTIDAD || a.cantidad || 0,
+                    precio,
+                    (a.CANTIDAD || 0) * precio,
+                    a.MOTIVO || a.motivo || ''
+                ]);
+            }
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(datos);
+        XLSX.utils.book_append_sheet(wb, ws, `MOVIMIENTOS_${tipoLabel}`);
+        XLSX.writeFile(wb, `reporte_movimientos_${tipoLabel}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ Reporte Excel descargado correctamente.');
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+/* =========================================================
+   REPORTE: COMPLETO EN EXCEL
+   ========================================================= */
+
+function generarReporteCompletoExcel() {
+    try {
+        const wb = XLSX.utils.book_new();
+        const datos = [];
+        
+        datos.push(['CÓDIGO', 'DESCRIPCIÓN', 'UNIDAD', 'ENTRADAS', 'CONSUMOS', 'AJUSTES', 'STOCK', 'ESTADO', 'VALOR STOCK']);
+        
+        const inventario = obtenerInventario();
+        inventario.forEach(i => {
+            datos.push([
+                i.codigo || '',
+                i.descripcion || '',
+                i.unidad || '',
+                i.entradas || 0,
+                i.consumos || 0,
+                i.ajustes || 0,
+                i.stock || 0,
+                i.estado || '',
+                i.valorStock || 0
+            ]);
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(datos);
+        XLSX.utils.book_append_sheet(wb, ws, 'INVENTARIO COMPLETO');
+        XLSX.writeFile(wb, `reporte_completo_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert('✅ Reporte Excel descargado correctamente.');
+    } catch (error) {
+     alert('❌ Error: ' + error.message);
+    }
+}
 /* =========================================================
    FIN DEL SCRIPT
    ========================================================= */
