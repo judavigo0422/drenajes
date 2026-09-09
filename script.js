@@ -2375,6 +2375,380 @@ function importarJSON(evento) {
     lector.readAsText(archivo);
     evento.target.value = "";
 }
+/* =========================================================
+   REPORTES AVANZADOS
+   ========================================================= */
+
+function mostrarReportes() {
+    // Cargar proyectos en el select
+    const selectProyecto = document.getElementById("reporte-proyecto");
+    if (selectProyecto) {
+        selectProyecto.innerHTML = '<option value="">Seleccione un proyecto</option>';
+        proyectos.forEach(p => {
+            const id = p.ID_PROYECTO || p.ID || p.id || "";
+            const titulo = p.TITULO || p.titulo || "";
+            const solped = p.SOLPED || p.solped || "";
+            if (id) {
+                const option = document.createElement("option");
+                option.value = id;
+                option.textContent = `${titulo} - SOLPED: ${solped}`;
+                selectProyecto.appendChild(option);
+            }
+        });
+    }
+    
+    document.getElementById("modal-reportes").style.display = "flex";
+    
+    // Eventos para mostrar/ocultar selects
+    document.getElementById("reporte-tipo").onchange = function() {
+        const val = this.value;
+        document.getElementById("contenedor-select-proyecto").style.display = val === "proyecto" ? "block" : "none";
+        document.getElementById("contenedor-select-tipo").style.display = val === "movimientos" ? "block" : "none";
+    };
+}
+
+function cerrarReportes() {
+    document.getElementById("modal-reportes").style.display = "none";
+}
+
+function generarReporte() {
+    const tipo = document.getElementById("reporte-tipo").value;
+    
+    if (tipo === "resumen") {
+        generarResumenEjecutivo();
+    } else if (tipo === "proyecto") {
+        generarReportePorProyecto();
+    } else if (tipo === "movimientos") {
+        generarReportePorTipoMovimiento();
+    } else if (tipo === "completo") {
+        generarReporteCompleto();
+    }
+    
+    cerrarReportes();
+}
+
+/* =========================================================
+   REPORTE: RESUMEN EJECUTIVO
+   ========================================================= */
+
+function generarResumenEjecutivo() {
+    let reporte = "========================================\n";
+    reporte += "📊 RESUMEN EJECUTIVO DE INVENTARIO\n";
+    reporte += "========================================\n";
+    reporte += `Fecha: ${fechaActual()}\n\n`;
+    
+    let totalGeneralAsignado = 0;
+    let totalGeneralConsumido = 0;
+    let totalGeneralDisponible = 0;
+    
+    proyectos.forEach(p => {
+        const id = p.ID_PROYECTO || p.ID || p.id || "";
+        const titulo = p.TITULO || p.titulo || "";
+        const solped = p.SOLPED || p.solped || "";
+        
+        const registros = proyectoMateriales.filter(r => {
+            const pid = r.ID_PROYECTO || r.id_proyecto || "";
+            return String(pid).trim() === String(id).trim();
+        });
+        
+        let totalAsignado = 0;
+        let totalConsumido = 0;
+        let totalCostoAsignado = 0;
+        let totalCostoConsumido = 0;
+        
+        registros.forEach(r => {
+            const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
+            const material = buscarMaterial(codigo);
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
+            const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
+            totalAsignado += asignado;
+            totalConsumido += consumido;
+            totalCostoAsignado += asignado * precio;
+            totalCostoConsumido += consumido * precio;
+        });
+        
+        const disponible = totalAsignado - totalConsumido;
+        const balance = totalCostoAsignado - totalCostoConsumido;
+        
+        totalGeneralAsignado += totalAsignado;
+        totalGeneralConsumido += totalConsumido;
+        totalGeneralDisponible += disponible;
+        
+        reporte += `📋 PROYECTO: ${titulo}\n`;
+        reporte += `   SOLPED: ${solped}\n`;
+        reporte += `   Materiales: ${registros.length}\n`;
+        reporte += `   Asignado: ${formatearNumero(totalAsignado)} unidades\n`;
+        reporte += `   Consumido: ${formatearNumero(totalConsumido)} unidades\n`;
+        reporte += `   Disponible: ${formatearNumero(disponible)} unidades\n`;
+        reporte += `   💰 Costo Asignado: ${formatearMoneda(totalCostoAsignado)}\n`;
+        reporte += `   🔥 Costo Consumido: ${formatearMoneda(totalCostoConsumido)}\n`;
+        reporte += `   📊 Balance: ${formatearMoneda(balance)}\n`;
+        reporte += `   ${balance >= 0 ? "✅" : "⚠️"} Estado: ${balance >= 0 ? "Presupuesto OK" : "Sobre costo"}\n\n`;
+    });
+    
+    reporte += "========================================\n";
+    reporte += "📊 TOTALES GENERALES\n";
+    reporte += `   Total Asignado: ${formatearNumero(totalGeneralAsignado)} unidades\n`;
+    reporte += `   Total Consumido: ${formatearNumero(totalGeneralConsumido)} unidades\n`;
+    reporte += `   Total Disponible: ${formatearNumero(totalGeneralDisponible)} unidades\n`;
+    reporte += "========================================\n";
+    reporte += `📊 FIN DEL REPORTE\n`;
+    reporte += "========================================\n";
+    
+    descargarReporte(reporte, `resumen_ejecutivo_${new Date().toISOString().slice(0,10)}.txt`);
+}
+
+/* =========================================================
+   REPORTE: POR PROYECTO
+   ========================================================= */
+
+function generarReportePorProyecto() {
+    const idProyecto = document.getElementById("reporte-proyecto").value;
+    if (!idProyecto) {
+        alert("Seleccione un proyecto.");
+        return;
+    }
+    
+    const proyecto = buscarProyecto(idProyecto);
+    if (!proyecto) {
+        alert("No se encontró el proyecto.");
+        return;
+    }
+    
+    const titulo = proyecto.TITULO || proyecto.titulo || "";
+    const solped = proyecto.SOLPED || proyecto.solped || "";
+    
+    let reporte = "========================================\n";
+    reporte += `📋 REPORTE DEL PROYECTO: ${titulo}\n`;
+    reporte += `SOLPED: ${solped}\n`;
+    reporte += `Fecha: ${fechaActual()}\n`;
+    reporte += "========================================\n\n";
+    
+    // Movimientos del proyecto
+    const movimientos = [];
+    entradas.filter(e => (e.ID_PROYECTO || e.id_proyecto || "") === idProyecto).forEach(e => {
+        const material = buscarMaterial(e.CODIGO_MATERIAL || e.codigo_material || "");
+        const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+        movimientos.push({
+            fecha: e.FECHA || e.fecha || "",
+            tipo: "ENTRADA",
+            codigo: e.CODIGO_MATERIAL || e.codigo_material || "",
+            descripcion: material ? descripcionMaterial(material) : "",
+            cantidad: e.CANTIDAD || e.cantidad || 0,
+            precio: precio,
+            total: (e.CANTIDAD || 0) * precio,
+            detalle: e.PROVEEDOR || e.proveedor || ""
+        });
+    });
+    
+    consumos.filter(c => (c.ID_PROYECTO || c.id_proyecto || "") === idProyecto).forEach(c => {
+        const material = buscarMaterial(c.CODIGO_MATERIAL || c.codigo_material || "");
+        const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+        movimientos.push({
+            fecha: c.FECHA || c.fecha || "",
+            tipo: c.TIPO_USO === "MOVIMIENTO" ? "TRASLADO" : "CONSUMO",
+            codigo: c.CODIGO_MATERIAL || c.codigo_material || "",
+            descripcion: material ? descripcionMaterial(material) : "",
+            cantidad: c.CANTIDAD || c.cantidad || 0,
+            precio: precio,
+            total: (c.CANTIDAD || 0) * precio,
+            detalle: c.OBSERVACION || c.observacion || ""
+        });
+    });
+    
+    movimientos.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    
+    reporte += "📊 MOVIMIENTOS\n";
+    reporte += "----------------------------------------\n";
+    reporte += "FECHA | TIPO | MATERIAL | CANTIDAD | PRECIO | TOTAL | DETALLE\n";
+    reporte += "----------------------------------------\n";
+    
+    let totalGeneral = 0;
+    movimientos.forEach(m => {
+        reporte += `${fechaVisible(m.fecha)} | ${m.tipo} | ${m.descripcion || m.codigo} | ${formatearNumero(m.cantidad)} | ${formatearMoneda(m.precio)} | ${formatearMoneda(m.total)} | ${m.detalle}\n`;
+        totalGeneral += m.total;
+    });
+    
+    reporte += "\n----------------------------------------\n";
+    reporte += `💰 TOTAL MOVIMIENTOS: ${formatearMoneda(totalGeneral)}\n`;
+    reporte += "----------------------------------------\n";
+    
+    // Resumen del proyecto
+    const registros = proyectoMateriales.filter(r => {
+        const pid = r.ID_PROYECTO || r.id_proyecto || "";
+        return String(pid).trim() === String(idProyecto).trim();
+    });
+    
+    let totalAsignado = 0;
+    let totalConsumido = 0;
+    let totalCostoAsignado = 0;
+    let totalCostoConsumido = 0;
+    
+    registros.forEach(r => {
+        const codigo = r.CODIGO_MATERIAL || r.codigo_material || "";
+        const material = buscarMaterial(codigo);
+        const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+        const asignado = numero(r.CANTIDAD_ASIGNADA || r.cantidad_asignada || 0);
+        const consumido = numero(r.CANTIDAD_CONSUMIDA || r.cantidad_consumida || 0);
+        totalAsignado += asignado;
+        totalConsumido += consumido;
+        totalCostoAsignado += asignado * precio;
+        totalCostoConsumido += consumido * precio;
+    });
+    
+    const balance = totalCostoAsignado - totalCostoConsumido;
+    
+    reporte += "\n📊 RESUMEN ECONÓMICO\n";
+    reporte += "----------------------------------------\n";
+    reporte += `💰 Costo Asignado: ${formatearMoneda(totalCostoAsignado)}\n`;
+    reporte += `🔥 Costo Consumido: ${formatearMoneda(totalCostoConsumido)}\n`;
+    reporte += `📊 Balance: ${formatearMoneda(balance)}\n`;
+    reporte += `   Estado: ${balance >= 0 ? "✅ Presupuesto OK" : "⚠️ Sobre costo"}\n`;
+    reporte += "========================================\n";
+    reporte += "📊 FIN DEL REPORTE\n";
+    reporte += "========================================\n";
+    
+    descargarReporte(reporte, `reporte_proyecto_${titulo.replace(/\s/g, "_")}_${new Date().toISOString().slice(0,10)}.txt`);
+}
+
+/* =========================================================
+   REPORTE: POR TIPO DE MOVIMIENTO
+   ========================================================= */
+
+function generarReportePorTipoMovimiento() {
+    const tipo = document.getElementById("reporte-tipo-movimiento").value;
+    const tipoLabel = tipo || "TODOS";
+    
+    let reporte = "========================================\n";
+    reporte += `📋 REPORTE DE MOVIMIENTOS - ${tipoLabel}\n`;
+    reporte += `Fecha: ${fechaActual()}\n`;
+    reporte += "========================================\n\n";
+    
+    const movimientos = [];
+    
+    entradas.forEach(e => {
+        if (!tipo || tipo === "ENTRADA") {
+            const material = buscarMaterial(e.CODIGO_MATERIAL || e.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            const proyecto = buscarProyecto(e.ID_PROYECTO || e.id_proyecto || "");
+            movimientos.push({
+                fecha: e.FECHA || e.fecha || "",
+                tipo: "ENTRADA",
+                codigo: e.CODIGO_MATERIAL || e.codigo_material || "",
+                descripcion: material ? descripcionMaterial(material) : "",
+                cantidad: e.CANTIDAD || e.cantidad || 0,
+                precio: precio,
+                total: (e.CANTIDAD || 0) * precio,
+                proyecto: proyecto ? (proyecto.TITULO || proyecto.titulo || "") : "",
+                detalle: e.PROVEEDOR || e.proveedor || ""
+            });
+        }
+    });
+    
+    consumos.forEach(c => {
+        const tipoConsumo = c.TIPO_USO === "MOVIMIENTO" ? "TRASLADO" : "CONSUMO";
+        if (!tipo || tipo === tipoConsumo || tipo === "CONSUMO") {
+            const material = buscarMaterial(c.CODIGO_MATERIAL || c.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            const proyecto = buscarProyecto(c.ID_PROYECTO || c.id_proyecto || "");
+            movimientos.push({
+                fecha: c.FECHA || c.fecha || "",
+                tipo: tipoConsumo,
+                codigo: c.CODIGO_MATERIAL || c.codigo_material || "",
+                descripcion: material ? descripcionMaterial(material) : "",
+                cantidad: c.CANTIDAD || c.cantidad || 0,
+                precio: precio,
+                total: (c.CANTIDAD || 0) * precio,
+                proyecto: proyecto ? (proyecto.TITULO || proyecto.titulo || "") : "",
+                detalle: c.OBSERVACION || c.observacion || ""
+            });
+        }
+    });
+    
+    ajustes.forEach(a => {
+        if (!tipo || tipo === "AJUSTE") {
+            const material = buscarMaterial(a.CODIGO_MATERIAL || a.codigo_material || "");
+            const precio = material ? numero(obtenerCampo(material, "PRECIO_UNITARIO")) : 0;
+            movimientos.push({
+                fecha: a.FECHA || a.fecha || "",
+                tipo: "AJUSTE " + (a.TIPO || ""),
+                codigo: a.CODIGO_MATERIAL || a.codigo_material || "",
+                descripcion: material ? descripcionMaterial(material) : "",
+                cantidad: a.CANTIDAD || a.cantidad || 0,
+                precio: precio,
+                total: (a.CANTIDAD || 0) * precio,
+                proyecto: "",
+                detalle: a.MOTIVO || a.motivo || ""
+            });
+        }
+    });
+    
+    movimientos.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    
+    reporte += "📊 MOVIMIENTOS\n";
+    reporte += "----------------------------------------\n";
+    reporte += "FECHA | TIPO | PROYECTO | MATERIAL | CANTIDAD | PRECIO | TOTAL | DETALLE\n";
+    reporte += "----------------------------------------\n";
+    
+    let totalGeneral = 0;
+    movimientos.forEach(m => {
+        reporte += `${fechaVisible(m.fecha)} | ${m.tipo} | ${m.proyecto || "-"} | ${m.descripcion || m.codigo} | ${formatearNumero(m.cantidad)} | ${formatearMoneda(m.precio)} | ${formatearMoneda(m.total)} | ${m.detalle}\n`;
+        totalGeneral += m.total;
+    });
+    
+    reporte += "\n----------------------------------------\n";
+    reporte += `💰 TOTAL MOVIMIENTOS: ${formatearMoneda(totalGeneral)}\n`;
+    reporte += `📊 Total registros: ${movimientos.length}\n`;
+    reporte += "========================================\n";
+    reporte += "📊 FIN DEL REPORTE\n";
+    reporte += "========================================\n";
+    
+    descargarReporte(reporte, `reporte_movimientos_${tipoLabel}_${new Date().toISOString().slice(0,10)}.txt`);
+}
+
+/* =========================================================
+   REPORTE: COMPLETO
+   ========================================================= */
+
+function generarReporteCompleto() {
+    let reporte = "========================================\n";
+    reporte += "📊 REPORTE COMPLETO DE INVENTARIO\n";
+    reporte += `Fecha: ${fechaActual()}\n`;
+    reporte += "========================================\n\n";
+    
+    reporte += "📦 INVENTARIO GENERAL\n";
+    reporte += "----------------------------------------\n";
+    const inventario = obtenerInventario();
+    reporte += "CÓDIGO | DESCRIPCIÓN | UNIDAD | STOCK | VALOR\n";
+    reporte += "----------------------------------------\n";
+    inventario.forEach(i => {
+        reporte += `${i.codigo} | ${i.descripcion || "-"} | ${i.unidad || "-"} | ${formatearNumero(i.stock)} | ${formatearMoneda(i.valorStock)}\n`;
+    });
+    
+    reporte += "\n========================================\n";
+    reporte += "📊 FIN DEL REPORTE\n";
+    reporte += "========================================\n";
+    
+    descargarReporte(reporte, `reporte_completo_${new Date().toISOString().slice(0,10)}.txt`);
+}
+
+/* =========================================================
+   FUNCIÓN AUXILIAR PARA DESCARGAR REPORTE
+   ========================================================= */
+
+function descargarReporte(texto, nombreArchivo) {
+    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert(`✅ Reporte "${nombreArchivo}" descargado correctamente.`);
+}
 
 /* =========================================================
    FIN DEL SCRIPT
